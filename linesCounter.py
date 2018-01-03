@@ -11,7 +11,7 @@ Creaated on 2018-01-01
 	1.递归查找指定路径下的程序源文件，计算每个文件的行数和所有文件的总行数（除去空行和注释）。
 	2.可指定日期，计算目标是创建日期大于指定日期的文件。
 	3.不指定日期，则计算目标是指定路径下所有文件。
-	4.计算结果在cmd控制台打印出来，同时存入line.txt（与本文件在同一路径）
+	4.计算结果在cmd控制台打印出来，同时存入line.txt（与本文件在同一路径）.
 2.目前实现：
 	计算.py .cpp .c .h四类文件
 3.使用方法：
@@ -20,8 +20,7 @@ Creaated on 2018-01-01
 	3.日期的格式：月份（缩写）-日期-时:分:秒-年
 	4.命令示例：linesCounter.py 1_VTS_DLL Oct-01-00:00:00-2017
 4.特别说明：
-	对于python文件，默认开头#！解释器说明和中文编码说明这两行如果有的话写在前两行；
-	不处理“这两行之间有若干空行”的变态写法
+	对于python文件，默认开头#！解释器说明和中文编码说明这两行如果有的话写在前两行;不处理“这两行之间有若干空行”的写法.
 '''
 
 import os
@@ -34,12 +33,16 @@ class LinesCounter :
 		print "I am a lines counter!"
 		self.__alphas = string.ascii_letters + '_'
 		self.__alphasAndNums = self.__alphas + string.digits
+		self.__fileNames = []
+		self.__lineNums = []
+		#字典的值是列表，列表中保存文件绝对路径
+		self.__typeAndFilenameDict = { 'py' : [], 'cpp' : [], 'c' : [], 'h' : [] }
+		#字典的值是列表，列表中保存文件的行数，与self.__typeAndFilenameDict一一对应
+		self.__typeAndNumsDict = { 'py' : [], 'cpp' : [], 'c' : [], 'h' : [] }
 		if (timeStamp == "") :
 			self.__timeStamp = 0
 		else :
 			self.__timeStamp = time.mktime(time.strptime(timeStamp, "%b-%d-%H:%M:%S-%Y"))
-		self.__fileNames = []
-		self.__lineNums = []
 		self.__path = os.path.abspath(path)
 
 	def __del__(self) :
@@ -199,6 +202,7 @@ class LinesCounter :
 		fh.close()
 		return num
 	
+	'''
 	#根据文件类型选计算的函数
 	def __getLineNumOfFile(self, fileName):
 		num = 0
@@ -211,51 +215,78 @@ class LinesCounter :
 		or (nameAndExtension[-1] == "h") ) :
 			num = self.__getCFileLines(fileName)
 		return num
-
+	'''
 	#递归遍历文件夹 找出python和C/C++文件
-	def __traversalDir(self, path, files) :
+	def __traversalDir(self, path) :
 		for fileName in os.listdir(path) :
 			filePath = os.path.join(path, fileName)
 			if os.path.isdir(filePath) :
-				self.__traversalDir(filePath, files)
+				self.__traversalDir(filePath)
 			else :
+				if (' ' in fileName) : #文件名中有空格则不处理
+					continue
 				if (os.path.getctime(filePath) < self.__timeStamp) :
 					continue
 				extension = fileName.split('.')
 				if (len(extension) < 2) :
 					continue
-				if ((extension[-1] == "py") or (extension[-1] == "cpp")
-				or (extension[-1] == "c") or (extension[-1] == "h")) :
-					files.append(filePath)
-		self.__fileNames = files
+				if (extension[-1] == "py") :
+					self.__typeAndFilenameDict['py'].append(filePath)
+				elif (extension[-1] == "cpp") : 
+					self.__typeAndFilenameDict['cpp'].append(filePath)
+				elif (extension[-1] == "c") :
+					self.__typeAndFilenameDict['c'].append(filePath)
+				elif (extension[-1] == "h") :
+					self.__typeAndFilenameDict['h'].append(filePath)
+
+	#测试打印
+	def testP(self) :
+		for fileName in self.__typeAndFilenameDict['py'] :
+			print fileName
+		for fileName in self.__typeAndFilenameDict['cpp'] :
+			print fileName
+		for fileName in self.__typeAndFilenameDict['c'] :
+			print fileName	
+		for fileName in self.__typeAndFilenameDict['h'] :
+			print fileName
 
 	#对外接口 返回文本行数
 	def countLines(self) :
-		self.__traversalDir(self.__path, self.__fileNames)
-		for fileName in self.__fileNames :
-			self.__lineNums.append(self.__getLineNumOfFile(fileName))
+		self.__traversalDir(self.__path)
+		for key, values in self.__typeAndFilenameDict.items() :
+			for fileName in values :
+				self.__typeAndNumsDict[key].append(self.__getPyFileLines(fileName))
 
 	#对外接口 打印结果 结果加上时间戳追加到lines.txt文件中
 	def couterPrint(self) :
 		i = 0
 		totallyNum = 0
+		numDict = { 'py' : 0, 'cpp' : 0, 'c' : 0, 'h' : 0 }
 		strResult = []
-		
+
 		strResult.append(time.strftime("%Y-%m-%d %H:%M", time.localtime()) + ":\n")
 		if (self.__timeStamp > 0) :
 			strResult.append("Files created after {0}:\n".
 			format(time.strftime("%Y-%m-%d %H:%M", time.localtime(self.__timeStamp))))
 		else :
 			strResult.append("All Files:\n")
-		for num in self.__lineNums :
-			print ("%s,lineNums is %d" % (self.__fileNames[i], num))
-			strResult.append("{0},lineNums is {1}\n".format(self.__fileNames[i], num))
+		for key, values in self.__typeAndFilenameDict.items() :
+			for index in range(len(self.__typeAndFilenameDict[key])) :
+				print ("%s,lineNums is %d" % (self.__typeAndFilenameDict[key][index],
+				self.__typeAndNumsDict[key][index]))
+				strResult.append("{0},lineNums is {1}\n".format(self.__typeAndFilenameDict[key][index],
+				self.__typeAndNumsDict[key][index]))
+				numDict[key] += self.__typeAndNumsDict[key][index]
 			i += 1
-			totallyNum += num
+			totallyNum += numDict[key]
+		
+		for key, values in numDict.items() :
+			print ("LineNums of *.%s file is %d" % (key, values))
+			strResult.append("LineNums of *.{0} file is {1}\n".format(key, values))		
 		print ("Totally num is %d" % totallyNum)
-		print ("Residual task %d" % (100000-totallyNum))
+#		print ("Residual task %d" % (100000-totallyNum))
 		strResult.append("Totally num is {0}\n".format(totallyNum))
-		strResult.append("Residual task {0}\n\n".format(100000-totallyNum))
+#		strResult.append("Residual task {0}\n\n".format(100000-totallyNum))
 		with open("lines.txt", "a+") as fh :
 			fh.writelines(strResult)
 			fh.flush()
