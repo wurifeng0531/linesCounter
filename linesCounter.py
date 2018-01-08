@@ -10,7 +10,7 @@ Creaated on 2018-01-01
 1.功能描述：
 	1.递归查找指定路径下的程序源文件，计算每个文件的行数和所有文件的总行数（除去空行和注释）。
 	2.可指定日期，计算目标是创建日期大于指定日期的文件。
-	3.不指定日期，则计算目标是指定路径下所有文件。
+	3.不指定日期，输入参数设为ALL，则计算目标是指定路径下所有文件。
 	4.计算结果在cmd控制台打印出来，同时存入line.txt（与本文件在同一路径）.
 2.目前实现：
 	计算.py .cpp .c .h四类文件
@@ -18,13 +18,15 @@ Creaated on 2018-01-01
 	1.在cmd中，进到本文件所在的路径，执行命令linesCounter.py 路径 日期
 	2.路径为绝对路径或相对路径
 	3.日期的格式：月份（缩写）-日期-时:分:秒-年
-	4.命令示例：linesCounter.py 1_VTS_DLL Oct-01-00:00:00-2017
+	4.命令示例：
+		linesCounter.py VTS_DLL ALL
+		linesCounter.py VTS_DLL Oct-01-00:00:00-2017
 4.特别说明：
 	对于python文件，默认开头#！解释器说明和中文编码说明这两行如果有的话写在前两行;不处理“这两行之间有若干空行”的写法.
 '''
 
 import os
-import sys
+#import sys
 import string
 import time
 
@@ -39,10 +41,13 @@ class LinesCounter :
 		self.__typeAndFilenameDict = { 'py' : [], 'cpp' : [], 'c' : [], 'h' : [] }
 		#字典的值是列表，列表中保存文件的行数，与self.__typeAndFilenameDict一一对应
 		self.__typeAndNumsDict = { 'py' : [], 'cpp' : [], 'c' : [], 'h' : [] }
+		'''
 		if (timeStamp == "") :
 			self.__timeStamp = 0
 		else :
 			self.__timeStamp = time.mktime(time.strptime(timeStamp, "%b-%d-%H:%M:%S-%Y"))
+		'''
+		self.__timeStamp = timeStamp
 		self.__path = os.path.abspath(path)
 
 	def __del__(self) :
@@ -293,10 +298,30 @@ class LinesCounter :
 		fh.close()
 
 def main() :
+	'''
 	if (len(sys.argv) == 3) :
 		Lc = LinesCounter(sys.argv[1], sys.argv[2])
 	elif (len(sys.argv) == 2) :
 		Lc = LinesCounter(sys.argv[1], "")
+	'''
+	path = raw_input("please input dir of files: ")
+	while(not os.path.isdir(path)) :
+		path = raw_input("Your input is not a dir, please input again: ")
+	timeStamp = raw_input("please input timeStamp: ")
+	while(True) :
+		if (timeStamp == 'ALL') :
+			Lc = LinesCounter(path, 0)
+			break
+		else :
+			try :
+				sec = time.mktime(time.strptime(timeStamp, "%b-%d-%H:%M:%S-%Y"))
+			except ValueError:
+				#print "Wrong fomat of time"
+				timeStamp = raw_input("Your input is invalid, please input again: ")
+				continue
+				#sec = time.mktime(time.strptime(timeStamp, "%b-%d-%H:%M:%S-%Y"))
+			Lc = LinesCounter(path, sec)
+			break
 	Lc.countLines()
 	Lc.couterPrint()
 
